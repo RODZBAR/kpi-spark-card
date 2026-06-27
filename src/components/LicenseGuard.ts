@@ -8,7 +8,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 // ===============================
 // MONETIZACAO — ALTERAR SOMENTE NA CERTIFICACAO
 // ===============================
-const MONETIZATION_ENABLED = false; // TODO[certificacao]: alterar para true
+const MONETIZATION_ENABLED = true; // BRANCH certification: monetizacao IAP ativa
 
 const PREMIUM_SERVICE_PLAN = "KPI_SPARK_CARD_PREMIUM";
 const SERVICE_PLAN_STATE_ACTIVE = 1; // powerbi.extensibility.ServicePlanState.Active

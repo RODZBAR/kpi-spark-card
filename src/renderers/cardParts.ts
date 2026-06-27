@@ -300,9 +300,13 @@ export function buildVarianceBadge(ctx: RenderContext): HTMLElement | null {
         justifyContent: "center",
     });
     badge.textContent = `${glyph ? glyph + " " : ""}${signPrefix}${text}`;
+    const label = ValueFormatter.sanitizeText(vs.varianceLabel.value);
+    // Acessibilidade: descricao textual da variancia (direcao + valor + rotulo).
+    const dirWord = result.direction === "positive" ? "aumento" : result.direction === "negative" ? "queda" : "estavel";
+    badge.setAttribute("role", "img");
+    badge.setAttribute("aria-label", `Variancia: ${dirWord} ${signPrefix}${text}${label ? " " + label : ""}`);
     row.appendChild(badge);
 
-    const label = ValueFormatter.sanitizeText(vs.varianceLabel.value);
     if (label) {
         const lbl = createHTMLElement("span", {
             color: safeColor(ctx.settings.footer.footerColor.value.value, DEFAULT_COLORS.footerColor),
@@ -442,7 +446,7 @@ export function buildSecondary(ctx: RenderContext): HTMLElement | null {
             padding: "4px 8px",
             minWidth: "0",
             flex: "1 1 auto",
-        }, { role: "group", "aria-label": `${labelText}: ${valueText}` });
+        }, { role: "group", tabindex: "0", "aria-label": `${labelText}: ${valueText}` });
 
         const labelEl = createHTMLElement("span");
         labelEl.textContent = labelText;

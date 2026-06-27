@@ -29,6 +29,18 @@ function toSparkValues(values: PrimitiveValue[] | undefined): number[] {
     });
 }
 
+/** Chave ordenavel para o eixo de tempo: Date -> ms; numero -> ele mesmo; senao null. */
+function timeKey(v: PrimitiveValue): number | null {
+    if (v instanceof Date) return v.getTime();
+    if (typeof v === "number" && isFinite(v)) return v;
+    return null;
+}
+
+/** Eixo e ordenavel apenas se TODOS os valores forem Data ou numero. */
+function isSortableAxis(values: PrimitiveValue[]): boolean {
+    return values.every((v) => timeKey(v) !== null);
+}
+
 export class DataViewMapper {
     public static map(dataView: DataView): MappedKPIData {
         const empty: MappedKPIData = {
@@ -69,8 +81,17 @@ export class DataViewMapper {
         const labelCat = categories.find((c) => c.source.roles?.["categoryLabel"]);
 
         const sparkCol = findValue("sparkValue") ?? mainCol;
-        const sparkValues = toSparkValues(sparkCol?.values);
-        const timeSeriesLabels = timeCat?.values?.map((v) => String(v ?? "")) ?? [];
+        const timeRaw = timeCat?.values ?? [];
+        let sparkValues = toSparkValues(sparkCol?.values);
+        let timeSeriesLabels = timeRaw.map((v) => String(v ?? ""));
+
+        // Ordena por tempo se o eixo for ordenavel (Data/numero) e as colunas estiverem alinhadas.
+        // Para categorias de texto (ex.: "Jan","Fev") preserva a ordem entregue pelo Power BI.
+        if (timeRaw.length > 1 && timeRaw.length === sparkValues.length && isSortableAxis(timeRaw)) {
+            const order = timeRaw.map((_, i) => i).sort((a, b) => (timeKey(timeRaw[a])! - timeKey(timeRaw[b])!));
+            sparkValues = order.map((i) => sparkValues[i]);
+            timeSeriesLabels = order.map((i) => timeSeriesLabels[i]);
+        }
 
         const comparisonValue = lastNumeric(findValue("comparisonValue")?.values);
         const targetValue = lastNumeric(findValue("targetValue")?.values);

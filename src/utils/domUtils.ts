@@ -8,7 +8,7 @@ export function createSVGElement<K extends keyof SVGElementTagNameMap>(tag: K): 
 }
 
 const ALLOWED_HTML_ATTRS = new Set<string>([
-    "role", "aria-label", "aria-hidden", "class", "id", "title",
+    "role", "aria-label", "aria-hidden", "class", "id", "title", "tabindex",
     "aria-valuemin", "aria-valuemax", "aria-valuenow", "aria-valuetext",
 ]);
 

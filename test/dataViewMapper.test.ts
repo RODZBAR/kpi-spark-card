@@ -105,6 +105,30 @@ describe("DataViewMapper", () => {
         expect(r.sparkValues.length).toBe(4);
     });
 
+    test("ordena serie temporal quando o eixo e Data fora de ordem", () => {
+        const d1 = new Date(2024, 0, 1), d2 = new Date(2024, 1, 1), d3 = new Date(2024, 2, 1);
+        const dv = {
+            categorical: {
+                categories: [catCol("timeSeries", [d3, d1, d2])],
+                values: [valueCol("mainValue", [30, 10, 20]), valueCol("sparkValue", [30, 10, 20])],
+            },
+        } as unknown as DataView;
+        const r = DataViewMapper.map(dv);
+        expect(r.sparkValues).toEqual([10, 20, 30]);
+    });
+
+    test("nao reordena eixo de texto (preserva ordem do Power BI)", () => {
+        const dv = {
+            categorical: {
+                categories: [catCol("timeSeries", ["Mar", "Jan", "Fev"])],
+                values: [valueCol("mainValue", [3, 1, 2]), valueCol("sparkValue", [3, 1, 2])],
+            },
+        } as unknown as DataView;
+        const r = DataViewMapper.map(dv);
+        expect(r.sparkValues).toEqual([3, 1, 2]);
+        expect(r.timeSeriesLabels).toEqual(["Mar", "Jan", "Fev"]);
+    });
+
     test("secondary measures ausentes -> array vazio sem crash", () => {
         const dv = {
             categorical: { categories: [], values: [valueCol("mainValue", [1])] },

@@ -6,6 +6,23 @@ e [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-06-27
+
+### Added
+- `aria-label` no badge de variância (direção + valor + rótulo).
+- `tabindex="0"` nos chips de KPIs secundários (navegação por teclado).
+- Ordenação automática da série temporal quando o eixo é Data/número (sparkline correta com dados fora de ordem); ordem de texto preservada.
+- `README.en.md` (listing em inglês para o AppSource).
+
+### Changed
+- Watermark adaptável a temas claros/escuros (scrim neutro + pílula com contraste próprio) e `featureName` sanitizado.
+- Teste de acessibilidade usa `role="group"` (reflete o comportamento real do root).
+
+### Notas de certificação
+- `style/visual.less` contém apenas CSS (verificado).
+- `MONETIZATION_ENABLED = true` é definido **somente na branch `certification`**; `main` permanece `false` (dev).
+- `PREMIUM_SERVICE_PLAN = "KPI_SPARK_CARD_PREMIUM"` deve coincidir exatamente com o plano cadastrado no Partner Center.
+
 ## [1.1.1] - 2026-06-27
 
 ### Added

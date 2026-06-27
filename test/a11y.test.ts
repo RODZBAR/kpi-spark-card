@@ -20,8 +20,9 @@ function ctx(): RenderContext {
 describe("Acessibilidade (axe)", () => {
     test("sem violacoes ARIA (contraste desabilitado no jsdom)", async () => {
         const root = document.createElement("div");
-        root.setAttribute("role", "img");
-        root.setAttribute("aria-label", "KPI: Regiao Sul Vendas 1,5K");
+        // Reflete o comportamento real do visual (visual.ts usa role="group").
+        root.setAttribute("role", "group");
+        root.setAttribute("aria-label", "KPI: Regiao Sul Vendas 1,5 mil");
         document.body.appendChild(root);
 
         new StandardRenderer(root).render(ctx());

@@ -52,10 +52,20 @@ export class ProgressBarRenderer {
             ? `${opts.label}: ${opts.formattedTarget}`
             : opts.formattedTarget;
         const labelRight = createHTMLElement("span");
-        labelRight.textContent = hasTarget ? `${Math.round(pct * 100)}%` : "—";
+        labelRight.textContent = hasTarget ? `${Math.round(pct * 100)}%` : "Sem meta";
         labelRow.appendChild(labelLeft);
         labelRow.appendChild(labelRight);
 
+        // Sem meta: barra neutra (sem preenchimento) — nao parece "meta nao atingida".
+        const trackAttrs = hasTarget
+            ? {
+                  role: "progressbar",
+                  "aria-valuemin": "0",
+                  "aria-valuemax": "100",
+                  "aria-valuenow": String(Math.round(fillPct)),
+                  "aria-label": opts.label || "Progresso",
+              }
+            : undefined;
         const track = createHTMLElement("div", {
             position: "relative",
             width: "100%",
@@ -63,17 +73,20 @@ export class ProgressBarRenderer {
             background: opts.barBgColor,
             borderRadius: `${opts.barRadius}px`,
             overflow: "hidden",
-        });
-        const fill = createHTMLElement("div", {
-            position: "absolute",
-            left: "0",
-            top: "0",
-            height: "100%",
-            width: `${fillPct}%`,
-            background: fillColor,
-            borderRadius: `${opts.barRadius}px`,
-        });
-        track.appendChild(fill);
+        }, trackAttrs);
+
+        if (hasTarget) {
+            const fill = createHTMLElement("div", {
+                position: "absolute",
+                left: "0",
+                top: "0",
+                height: "100%",
+                width: `${fillPct}%`,
+                background: fillColor,
+                borderRadius: `${opts.barRadius}px`,
+            });
+            track.appendChild(fill);
+        }
 
         container.appendChild(labelRow);
         container.appendChild(track);

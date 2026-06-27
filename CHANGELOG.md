@@ -6,6 +6,28 @@ e [Versionamento Semantico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-27
+
+### Added
+- Modelo de **valor estilo cartao nativo** em Valor Principal e KPIs Secundarios: fonte
+  (familia/tamanho pt/N/I/S), cor (+fx), unidade (Auto/Nenhum/Mil/Milhao/Bilhao/**Trilhao**),
+  casas decimais (Auto ou manual) e quebra de texto.
+- Modelo de **rotulo** em Categoria, Titulo e rotulos dos Secundarios: caixa de texto
+  personalizada (vazio = nome do campo/medida) com **fx** para medidas de texto DAX, fonte,
+  cor (+fx), alinhamento e quebra de texto.
+- KPIs Secundarios: fonte/cor/quebra compartilhadas; unidade/decimais/rotulo por KPI (1–4) —
+  suporta tipos mistos (R$ + %) lendo o format de cada medida.
+- Acessibilidade: root `role="group"`, progress bar `role="progressbar"` + `aria-value*`,
+  chips com `aria-label` "Rotulo: Valor".
+- 3 checklists (Certificacao, Acessibilidade, Monetizacao), `PRIVACY.md`, `DOCS/architecture.md`, `DOCS/testing.md`.
+
+### Fixed
+- `VarianceCalculator`: `comparison = 0` deixa de ser tratado como neutro (direcao pelo sinal).
+- `ValueFormatter`: sinal negativo vem antes do prefixo (`-R$1,2K`).
+- `ProgressBarRenderer`: meta = 0 mostra "Sem meta" (nao parece meta nao atingida).
+- `SparklineBuilder`: `range = 0` em area desenha so a linha; min/max via loop (arrays grandes).
+- `LicenseGuard.refreshLicense()` chamado no `update()`.
+
 ## [1.0.0] - 2026-06-26
 
 ### Added

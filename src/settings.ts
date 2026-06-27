@@ -56,14 +56,32 @@ function makeFont(minPt: number, maxPt: number, defPt: number, bold: boolean): F
     });
 }
 
+/** FontControl com nomes de sub-controles personalizados (para conviver com outro FontControl no mesmo objeto). */
+function makeFontNamed(prefix: string, minPt: number, maxPt: number, defPt: number, bold: boolean): FontControl {
+    return new FontControl({
+        name: `${prefix}Font`,
+        displayName: "Fonte",
+        fontFamily: new FontPicker({ name: `${prefix}FontFamily`, displayName: "Familia", value: DEFAULT_FONT_FAMILY }),
+        fontSize: new NumUpDown({ name: `${prefix}FontSize`, displayName: "Tamanho", value: defPt, options: num(minPt, maxPt) }),
+        bold: new ToggleSwitch({ name: `${prefix}Bold`, displayName: "Negrito", value: bold }),
+        italic: new ToggleSwitch({ name: `${prefix}Italic`, displayName: "Italico", value: false }),
+        underline: new ToggleSwitch({ name: `${prefix}Underline`, displayName: "Sublinhado", value: false }),
+    });
+}
+
+/** TextInput com botao fx (recebe medida de texto DAX). */
+function fxText(name: string, displayName: string, placeholder: string): TextInput {
+    return new TextInput({ name, displayName, value: "", placeholder, instanceKind: FX_INSTANCE_KIND });
+}
+
 const ALIGN_ITEMS: EnumMember[] = [
     { value: "left", displayName: "Esquerda" },
     { value: "center", displayName: "Centro" },
     { value: "right", displayName: "Direita" },
 ];
 
-function alignmentDropdown(): ItemDropdown {
-    return new ItemDropdown({ name: "alignment", displayName: "Alinhamento", items: ALIGN_ITEMS, value: ALIGN_ITEMS[0] });
+function alignmentDropdown(name = "alignment"): ItemDropdown {
+    return new ItemDropdown({ name, displayName: "Alinhamento", items: ALIGN_ITEMS, value: ALIGN_ITEMS[0] });
 }
 
 // --- Card 1: layout ----------------------------------------------------------
@@ -116,24 +134,28 @@ class CardStyleCard extends Card {
 // --- Card 3: category --------------------------------------------------------
 
 class CategoryCard extends Card {
+    text = fxText("text", "Texto (vazio = campo / fx)", "auto");
     font = makeFont(6, 14, 8, true);
     fontColor = fxColor("fontColor", "Cor do texto", DEFAULT_COLORS.categoryColor);
     alignment = alignmentDropdown();
     uppercase = new ToggleSwitch({ name: "uppercase", displayName: "CAIXA ALTA", value: true });
+    wrap = new ToggleSwitch({ name: "wrap", displayName: "Quebra de texto", value: false });
     name = "category";
     displayName = "Categoria";
-    slices = [this.font, this.fontColor, this.alignment, this.uppercase];
+    slices = [this.text, this.font, this.fontColor, this.alignment, this.uppercase, this.wrap];
 }
 
 // --- Card 4: title -----------------------------------------------------------
 
 class TitleCard extends Card {
+    text = fxText("text", "Texto (vazio = medida / fx)", "auto");
     font = makeFont(6, 14, 9, false);
     fontColor = fxColor("fontColor", "Cor do texto", DEFAULT_COLORS.titleColor);
     alignment = alignmentDropdown();
+    wrap = new ToggleSwitch({ name: "wrap", displayName: "Quebra de texto", value: false });
     name = "title";
     displayName = "Titulo do KPI";
-    slices = [this.font, this.fontColor, this.alignment];
+    slices = [this.text, this.font, this.fontColor, this.alignment, this.wrap];
 }
 
 // --- Card 5: mainValue -------------------------------------------------------
@@ -151,15 +173,18 @@ class MainValueCard extends Card {
             { value: "thousands", displayName: "Mil" },
             { value: "millions", displayName: "Milhao" },
             { value: "billions", displayName: "Bilhao" },
+            { value: "trillions", displayName: "Trilhao" },
         ],
         value: { value: "auto", displayName: "Auto" },
     });
+    decimalsAuto = new ToggleSwitch({ name: "decimalsAuto", displayName: "Casas decimais automaticas", value: false });
     decimalPlaces = new NumUpDown({ name: "decimalPlaces", displayName: "Casas decimais", value: 1, options: num(0, 4) });
+    wrap = new ToggleSwitch({ name: "wrap", displayName: "Quebra de texto", value: false });
     prefix = new TextInput({ name: "prefix", displayName: "Prefixo", value: "", placeholder: "ex: R$" });
     suffix = new TextInput({ name: "suffix", displayName: "Sufixo", value: "", placeholder: "ex: %" });
     name = "mainValue";
     displayName = "Valor Principal";
-    slices = [this.font, this.fontColor, this.alignment, this.displayUnits, this.decimalPlaces, this.prefix, this.suffix];
+    slices = [this.font, this.fontColor, this.alignment, this.displayUnits, this.decimalsAuto, this.decimalPlaces, this.wrap, this.prefix, this.suffix];
 }
 
 // --- Card 6: variance --------------------------------------------------------
@@ -269,46 +294,46 @@ class SparklineCard extends Card {
 
 class SecondaryCard extends Card {
     secondaryEnabled = new ToggleSwitch({ name: "secondaryEnabled", displayName: "Exibir KPIs secundarios", value: false });
-    // Formatacao POR KPI (cada medida tem seu proprio tipo: R$, %, etc.)
-    formatMode = [1, 2, 3, 4].map((i) => new ItemDropdown({
-        name: `formatMode${i}`,
-        displayName: `KPI ${i} - Formato`,
-        items: [
-            { value: "auto", displayName: "Auto (formato da medida)" },
-            { value: "manual", displayName: "Manual" },
-        ],
-        value: { value: "auto", displayName: "Auto (formato da medida)" },
-    }));
+    // POR KPI: texto do rotulo (fx), unidade, casas decimais (auto/manual) — suporta R$ + % juntos.
+    labelText = [1, 2, 3, 4].map((i) => fxText(`labelText${i}`, `KPI ${i} - Texto do rotulo (vazio = medida / fx)`, "nome da medida"));
     displayUnits = [1, 2, 3, 4].map((i) => new ItemDropdown({
         name: `displayUnits${i}`,
-        displayName: `KPI ${i} - Unidades (manual)`,
+        displayName: `KPI ${i} - Unidades`,
         items: [
             { value: "auto", displayName: "Auto" },
             { value: "none", displayName: "Nenhum" },
             { value: "thousands", displayName: "Mil" },
             { value: "millions", displayName: "Milhao" },
             { value: "billions", displayName: "Bilhao" },
+            { value: "trillions", displayName: "Trilhao" },
         ],
         value: { value: "auto", displayName: "Auto" },
     }));
-    decimals = [1, 2, 3, 4].map((i) => new NumUpDown({ name: `decimals${i}`, displayName: `KPI ${i} - Casas decimais (manual)`, value: 1, options: num(0, 4) }));
+    decimalsAuto = [1, 2, 3, 4].map((i) => new ToggleSwitch({ name: `decimalsAuto${i}`, displayName: `KPI ${i} - Casas decimais automaticas`, value: true }));
+    decimals = [1, 2, 3, 4].map((i) => new NumUpDown({ name: `decimals${i}`, displayName: `KPI ${i} - Casas decimais`, value: 1, options: num(0, 4) }));
+    // COMPARTILHADO (rotulo): fonte + cor + alinhamento + quebra
+    labelFont = makeFontNamed("secLabel", 6, 14, 8, false);
+    secondaryLabelColor = fxColor("secondaryLabelColor", "Cor do rotulo", DEFAULT_COLORS.secondaryLabel);
+    labelAlignment = alignmentDropdown("labelAlignment");
+    labelWrap = new ToggleSwitch({ name: "labelWrap", displayName: "Quebra de texto (rotulo)", value: false });
+    // COMPARTILHADO (valor): fonte + cor + quebra
+    valueFont = makeFontNamed("secValue", 8, 18, 10, true);
+    secondaryValueColor = fxColor("secondaryValueColor", "Cor do valor", DEFAULT_COLORS.secondaryValue);
+    valueWrap = new ToggleSwitch({ name: "valueWrap", displayName: "Quebra de texto (valor)", value: false });
+    // Fundo dos chips
     secondaryBgColor = fxColor("secondaryBgColor", "Cor de fundo dos chips", DEFAULT_COLORS.secondaryBg);
     secondaryBgTransparency = new NumUpDown({ name: "secondaryBgTransparency", displayName: "Transparencia fundo dos chips (%)", value: 0, options: num(0, 100) });
-    secondaryLabelSize = new NumUpDown({ name: "secondaryLabelSize", displayName: "Tamanho do rotulo (pt)", value: 8, options: num(6, 11) });
-    secondaryLabelColor = fxColor("secondaryLabelColor", "Cor do rotulo", DEFAULT_COLORS.secondaryLabel);
-    secondaryValueSize = new NumUpDown({ name: "secondaryValueSize", displayName: "Tamanho do valor (pt)", value: 10, options: num(8, 14) });
-    secondaryValueColor = fxColor("secondaryValueColor", "Cor do valor", DEFAULT_COLORS.secondaryValue);
-    secondaryValueBold = new ToggleSwitch({ name: "secondaryValueBold", displayName: "Negrito no valor", value: true });
     topLevelSlice = this.secondaryEnabled;
     name = "secondary";
     displayName = "KPIs Secundarios (Premium)";
     slices = [
-        this.formatMode[0], this.displayUnits[0], this.decimals[0],
-        this.formatMode[1], this.displayUnits[1], this.decimals[1],
-        this.formatMode[2], this.displayUnits[2], this.decimals[2],
-        this.formatMode[3], this.displayUnits[3], this.decimals[3],
-        this.secondaryBgColor, this.secondaryBgTransparency, this.secondaryLabelSize, this.secondaryLabelColor,
-        this.secondaryValueSize, this.secondaryValueColor, this.secondaryValueBold,
+        this.labelText[0], this.displayUnits[0], this.decimalsAuto[0], this.decimals[0],
+        this.labelText[1], this.displayUnits[1], this.decimalsAuto[1], this.decimals[1],
+        this.labelText[2], this.displayUnits[2], this.decimalsAuto[2], this.decimals[2],
+        this.labelText[3], this.displayUnits[3], this.decimalsAuto[3], this.decimals[3],
+        this.labelFont, this.secondaryLabelColor, this.labelAlignment, this.labelWrap,
+        this.valueFont, this.secondaryValueColor, this.valueWrap,
+        this.secondaryBgColor, this.secondaryBgTransparency,
     ];
 }
 

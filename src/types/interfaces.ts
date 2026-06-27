@@ -14,6 +14,8 @@ export interface MappedKPIData {
     errorMessage?: string;
     /** Nome da medida principal (usado como titulo do KPI). */
     title: string;
+    /** Format string da medida principal (ex: "0.0%", "R$ #,0"). */
+    mainFormat?: string;
     mainValue: number | null;
     comparisonValue: number | null;
     targetValue: number | null;

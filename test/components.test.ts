@@ -75,9 +75,9 @@ describe("ProgressBarRenderer", () => {
         expect(el.textContent).toContain("50%");
     });
 
-    test("meta 0 mostra travessao no percentual", () => {
+    test("meta 0 mostra 'Sem meta' (nao parece meta nao atingida)", () => {
         const el = opts({ target: 0 });
-        expect(el.textContent).toContain("—");
+        expect(el.textContent).toContain("Sem meta");
     });
 
     test("acima da meta usa cor de excedido", () => {

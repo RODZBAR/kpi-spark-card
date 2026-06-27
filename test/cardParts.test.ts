@@ -184,21 +184,21 @@ describe("cardParts — formato dos secundarios", () => {
         expect(el.textContent).toContain("25,6M");
     });
 
-    test("manual (por KPI) usa unidades do card (sem %)", () => {
+    test("unidade por KPI: millions -> M", () => {
         const s = new VisualFormattingSettingsModel();
         s.secondary.secondaryEnabled.value = true;
-        setEnum(s.secondary.formatMode[0] as never, "manual");
-        const data = makeData({ secondary: [{ slot: 1, label: "Receita", value: 1500, format: "0.0%" }] });
+        setEnum(s.secondary.displayUnits[0] as never, "millions");
+        const data = makeData({ secondary: [{ slot: 1, label: "Receita", value: 1500000 }] });
         const el = parts.buildSecondary(ctx(data, s))!;
-        expect(el.textContent).not.toContain("%");
-        expect(el.textContent).toContain("1,5K");
+        expect(el.textContent).toContain("1,5M");
     });
 
-    test("config por KPI e independente: KPI1 manual, KPI2 auto (%)", () => {
+    test("config por KPI e independente: KPI1 sem unidade, KPI2 respeita % (tipos mistos)", () => {
         const s = new VisualFormattingSettingsModel();
         s.secondary.secondaryEnabled.value = true;
-        setEnum(s.secondary.formatMode[0] as never, "manual"); // KPI 1 manual
-        // KPI 2 permanece auto -> respeita %
+        setEnum(s.secondary.displayUnits[0] as never, "none"); // KPI 1 sem escala
+        s.secondary.decimalsAuto[0].value = false;
+        s.secondary.decimals[0].value = 0;
         const data = makeData({
             secondary: [
                 { slot: 1, label: "Receita", value: 1500, format: "#,0" },
@@ -206,8 +206,8 @@ describe("cardParts — formato dos secundarios", () => {
             ],
         });
         const el = parts.buildSecondary(ctx(data, s))!;
-        expect(el.textContent).toContain("1,5K"); // KPI1 manual
-        expect(el.textContent).toContain("%");     // KPI2 auto respeita %
+        expect(el.textContent).toContain("1500"); // KPI1 sem unidade, 0 decimais
+        expect(el.textContent).toContain("%");     // KPI2 respeita % da medida
     });
 });
 

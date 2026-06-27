@@ -4,7 +4,7 @@
 
 import { DEFAULT_LOCALE } from "../constants";
 
-export type DisplayUnits = "auto" | "none" | "thousands" | "millions" | "billions";
+export type DisplayUnits = "auto" | "none" | "thousands" | "millions" | "billions" | "trillions";
 
 export interface FormatOptions {
     value: number | null;
@@ -30,7 +30,8 @@ export class ValueFormatter {
 
         const mode: Exclude<DisplayUnits, "auto"> =
             displayUnits === "auto"
-                ? abs >= 1e9 ? "billions"
+                ? abs >= 1e12 ? "trillions"
+                : abs >= 1e9 ? "billions"
                 : abs >= 1e6 ? "millions"
                 : abs >= 1e3 ? "thousands"
                 : "none"
@@ -39,6 +40,7 @@ export class ValueFormatter {
         let scaled = abs;
         let unit = "";
         switch (mode) {
+            case "trillions": scaled = abs / 1e12; unit = "T"; break;
             case "billions": scaled = abs / 1e9; unit = "B"; break;
             case "millions": scaled = abs / 1e6; unit = "M"; break;
             case "thousands": scaled = abs / 1e3; unit = "K"; break;
@@ -50,7 +52,7 @@ export class ValueFormatter {
             maximumFractionDigits: decimalPlaces,
         }).format(scaled);
 
-        return `${sanitize(String(prefix))}${sign}${formatted}${unit}${sanitize(String(suffix))}`;
+        return `${sign}${sanitize(String(prefix))}${formatted}${unit}${sanitize(String(suffix))}`;
     }
 
     /** Remove caracteres potencialmente perigosos antes de exibir texto. */

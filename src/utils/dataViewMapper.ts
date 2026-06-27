@@ -87,6 +87,7 @@ export class DataViewMapper {
         return {
             isValid: true,
             title: mainCol?.source.displayName ?? "",
+            mainFormat: mainCol?.source.format,
             mainValue,
             comparisonValue,
             targetValue,

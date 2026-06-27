@@ -36,8 +36,13 @@ export class SparklineBuilder {
         const refEnabled = opts.referenceValue !== undefined && isFinite(opts.referenceValue);
 
         // Dominio inclui a referencia (meta) quando ativa, para a linha ficar sempre visivel.
-        let domainMin = Math.min(...valid);
-        let domainMax = Math.max(...valid);
+        // Loop (em vez de Math.min(...valid)) evita estourar a pilha com arrays grandes.
+        let domainMin = valid[0];
+        let domainMax = valid[0];
+        for (const v of valid) {
+            if (v < domainMin) domainMin = v;
+            if (v > domainMax) domainMax = v;
+        }
         if (refEnabled) {
             domainMin = Math.min(domainMin, opts.referenceValue as number);
             domainMax = Math.max(domainMax, opts.referenceValue as number);
@@ -65,7 +70,11 @@ export class SparklineBuilder {
         switch (opts.type) {
             case "bar": SparklineBuilder.renderBar(container, points, opts, barWidth, baseline); break;
             case "step": SparklineBuilder.renderStep(container, points, opts); break;
-            case "area": SparklineBuilder.renderArea(container, points, opts, baseline); break;
+            case "area":
+                // range=0: todos iguais -> so a linha (evita triangulo de fechamento estranho).
+                if (range === 0) SparklineBuilder.renderLine(container, points, opts);
+                else SparklineBuilder.renderArea(container, points, opts, baseline);
+                break;
             default: SparklineBuilder.renderLine(container, points, opts);
         }
 

@@ -5,7 +5,7 @@
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 import { VisualFormattingSettingsModel } from "../settings";
 import { MappedKPIData } from "../types/interfaces";
-import { ValueFormatter, DisplayUnits } from "../components/ValueFormatter";
+import { ValueFormatter } from "../components/ValueFormatter";
 import { VarianceCalculator } from "../components/VarianceCalculator";
 import { SparklineBuilder, SparklineType } from "../components/SparklineBuilder";
 import { ProgressBarRenderer } from "../components/ProgressBarRenderer";
@@ -48,7 +48,12 @@ function readFont(fc: formattingSettings.FontControl): FontSpec {
     };
 }
 
-function applyTextStyle(el: HTMLElement, font: FontSpec, color: string, align: string): void {
+/**
+ * Aplica fonte/cor/alinhamento e quebra de texto.
+ * wrap=true: preserva espacos extras e quebra linha (white-space: pre-wrap).
+ * wrap=false: corta com reticencias (nowrap + ellipsis).
+ */
+function applyTextStyle(el: HTMLElement, font: FontSpec, color: string, align: string, wrap = false): void {
     el.style.fontFamily = font.family;
     el.style.fontSize = `${font.sizePt}pt`;
     el.style.fontWeight = font.bold ? "bold" : "normal";
@@ -57,9 +62,50 @@ function applyTextStyle(el: HTMLElement, font: FontSpec, color: string, align: s
     el.style.color = color;
     el.style.textAlign = align;
     el.style.lineHeight = "1.2";
-    el.style.whiteSpace = "nowrap";
     el.style.overflow = "hidden";
-    el.style.textOverflow = "ellipsis";
+    if (wrap) {
+        el.style.whiteSpace = "pre-wrap";
+        el.style.wordBreak = "break-word";
+    } else {
+        el.style.whiteSpace = "nowrap";
+        el.style.textOverflow = "ellipsis";
+    }
+}
+
+// --- Motor de formatacao de valor (estilo cartao nativo) ---------------------
+
+/** Numero representativo que forca a unidade de exibicao no valueFormatter. */
+function unitRepresentative(units: string, value: number): number {
+    switch (units) {
+        case "none": return 0;
+        case "thousands": return 1e3;
+        case "millions": return 1e6;
+        case "billions": return 1e9;
+        case "trillions": return 1e12;
+        default: return Math.abs(value); // auto
+    }
+}
+
+/**
+ * Formata um valor respeitando o format string da medida (%, moeda) e aplicando
+ * unidade de exibicao (Auto/Nenhum/Mil/Milhao/Bilhao/Trilhao) e casas decimais
+ * (Auto ou manual). Equivalente ao "valor do balao" do cartao nativo.
+ */
+function formatValueNative(
+    value: number | null | undefined,
+    format: string | undefined,
+    units: string,
+    decimalsAuto: boolean,
+    decimals: number
+): string {
+    if (value == null || !isFinite(value)) return "—";
+    const fmt = valueFormatter.create({
+        format: format,
+        value: unitRepresentative(units, value),
+        precision: decimalsAuto ? undefined : decimals,
+        cultureSelector: DEFAULT_LOCALE,
+    });
+    return fmt.format(value);
 }
 
 // --- Superficie do cartao ----------------------------------------------------
@@ -118,27 +164,29 @@ export function buildCardSurface(ctx: RenderContext): CardSurface {
 
 export function buildCategory(ctx: RenderContext): HTMLElement | null {
     if (!ctx.settings.layout.showCategory.value) return null;
-    const raw = ctx.data.category;
-    if (raw == null || raw === "") return null;
-
     const c = ctx.settings.category;
+    const override = ValueFormatter.sanitizeText(c.text.value);
+    let raw = override || ValueFormatter.sanitizeText(ctx.data.category ?? "");
+    if (!raw) return null;
+    if (c.uppercase.value) raw = raw.toUpperCase();
+
     const el = createHTMLElement("div");
-    let text = ValueFormatter.sanitizeText(raw);
-    if (c.uppercase.value) text = text.toUpperCase();
-    el.textContent = text;
-    applyTextStyle(el, readFont(c.font), safeColor(c.fontColor.value.value, DEFAULT_COLORS.categoryColor), String(c.alignment.value.value));
+    el.textContent = raw;
+    applyTextStyle(el, readFont(c.font), safeColor(c.fontColor.value.value, DEFAULT_COLORS.categoryColor), String(c.alignment.value.value), c.wrap.value);
     return el;
 }
 
 // --- Titulo ------------------------------------------------------------------
 
 export function buildTitle(ctx: RenderContext): HTMLElement | null {
-    const raw = ctx.data.title;
-    if (!raw) return null;
     const t = ctx.settings.title;
+    const override = ValueFormatter.sanitizeText(t.text.value);
+    const raw = override || ValueFormatter.sanitizeText(ctx.data.title);
+    if (!raw) return null;
+
     const el = createHTMLElement("div");
-    el.textContent = ValueFormatter.sanitizeText(raw);
-    applyTextStyle(el, readFont(t.font), safeColor(t.fontColor.value.value, DEFAULT_COLORS.titleColor), String(t.alignment.value.value));
+    el.textContent = raw;
+    applyTextStyle(el, readFont(t.font), safeColor(t.fontColor.value.value, DEFAULT_COLORS.titleColor), String(t.alignment.value.value), t.wrap.value);
     return el;
 }
 
@@ -146,22 +194,23 @@ export function buildTitle(ctx: RenderContext): HTMLElement | null {
 
 export function formatMainValue(ctx: RenderContext): string {
     const v = ctx.settings.mainValue;
-    return ValueFormatter.format({
-        value: ctx.data.mainValue,
-        displayUnits: String(v.displayUnits.value.value) as DisplayUnits,
-        decimalPlaces: v.decimalPlaces.value,
-        prefix: v.prefix.value,
-        suffix: v.suffix.value,
-        locale: DEFAULT_LOCALE,
-    });
+    const num = formatValueNative(
+        ctx.data.mainValue,
+        ctx.data.mainFormat,
+        String(v.displayUnits.value.value),
+        v.decimalsAuto.value,
+        v.decimalPlaces.value
+    );
+    const prefix = ValueFormatter.sanitizeText(v.prefix.value);
+    const suffix = ValueFormatter.sanitizeText(v.suffix.value);
+    return `${prefix}${num}${suffix}`;
 }
 
 export function buildMainValue(ctx: RenderContext): HTMLElement {
     const v = ctx.settings.mainValue;
     const el = createHTMLElement("div");
     el.textContent = formatMainValue(ctx);
-    applyTextStyle(el, readFont(v.font), safeColor(v.fontColor.value.value, DEFAULT_COLORS.valueColor), String(v.alignment.value.value));
-    el.style.whiteSpace = "nowrap";
+    applyTextStyle(el, readFont(v.font), safeColor(v.fontColor.value.value, DEFAULT_COLORS.valueColor), String(v.alignment.value.value), v.wrap.value);
     return el;
 }
 
@@ -201,19 +250,20 @@ export function buildVarianceBadge(ctx: RenderContext): HTMLElement | null {
     if (result.direction !== "neutral") {
         if (indicator === "triangle") glyph = up ? "▲" : "▼";
         else if (indicator === "arrow") glyph = up ? "↑" : "↓";
-        else signPrefix = up ? "+" : "−"; // acessibilidade: mantem sinal sem depender de cor
+        else signPrefix = up ? "+" : "−";
     }
 
     const pctStr = result.percentage !== null
         ? new Intl.NumberFormat(DEFAULT_LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(result.percentage)) + "%"
         : "—";
     const mv = ctx.settings.mainValue;
-    const absStr = ValueFormatter.format({
-        value: result.absolute !== null ? Math.abs(result.absolute) : null,
-        displayUnits: String(mv.displayUnits.value.value) as DisplayUnits,
-        decimalPlaces: mv.decimalPlaces.value,
-        locale: DEFAULT_LOCALE,
-    });
+    const absStr = formatValueNative(
+        result.absolute !== null ? Math.abs(result.absolute) : null,
+        ctx.data.mainFormat,
+        String(mv.displayUnits.value.value),
+        mv.decimalsAuto.value,
+        mv.decimalPlaces.value
+    );
 
     const mode = String(vs.varianceMode.value.value);
     if (mode === "absolute") text = absStr;
@@ -242,6 +292,8 @@ export function buildVarianceBadge(ctx: RenderContext): HTMLElement | null {
         padding: "1px 7px",
         borderRadius: "10px",
         lineHeight: "1.3",
+        minWidth: "34px",
+        justifyContent: "center",
     });
     badge.textContent = `${glyph ? glyph + " " : ""}${signPrefix}${text}`;
     row.appendChild(badge);
@@ -267,7 +319,7 @@ export function buildSparkline(ctx: RenderContext, width: number, heightOverride
     if (!sp.sparkEnabled.value) return null;
     if (ctx.data.sparkValues.filter((v) => isFinite(v)).length < 2) return null;
 
-    const height = heightOverride && heightOverride > 0 ? heightOverride : sp.sparkHeight.value;
+    const height = heightOverride != null && heightOverride > 0 ? heightOverride : sp.sparkHeight.value;
     const svg = createSVGElement("svg");
     setSVGAttributes(svg, {
         viewBox: `0 0 ${width} ${height}`,
@@ -307,14 +359,14 @@ export function buildProgress(ctx: RenderContext): HTMLElement | null {
     if (ctx.data.targetValue == null || ctx.data.mainValue == null) return null;
 
     const mv = ctx.settings.mainValue;
-    const formattedTarget = ValueFormatter.format({
-        value: ctx.data.targetValue,
-        displayUnits: String(mv.displayUnits.value.value) as DisplayUnits,
-        decimalPlaces: mv.decimalPlaces.value,
-        prefix: mv.prefix.value,
-        suffix: mv.suffix.value,
-        locale: DEFAULT_LOCALE,
-    });
+    const num = formatValueNative(
+        ctx.data.targetValue,
+        ctx.data.mainFormat,
+        String(mv.displayUnits.value.value),
+        mv.decimalsAuto.value,
+        mv.decimalPlaces.value
+    );
+    const formattedTarget = `${ValueFormatter.sanitizeText(mv.prefix.value)}${num}${ValueFormatter.sanitizeText(mv.suffix.value)}`;
 
     return ProgressBarRenderer.render({
         current: ctx.data.mainValue,
@@ -337,28 +389,16 @@ export function buildProgress(ctx: RenderContext): HTMLElement | null {
 
 // --- KPIs secundarios (premium) ---------------------------------------------
 
-/**
- * Formata o valor secundario. Auto = respeita o format string da medida (%, moeda,
- * etc.) via valueFormatter oficial; Manual = usa unidades/decimais do card.
- */
 function formatSecondaryValue(ctx: RenderContext, kpi: { slot: number; value: number | null; format?: string }): string {
-    if (kpi.value == null || !isFinite(kpi.value)) return "—";
     const sc = ctx.settings.secondary;
     const idx = Math.min(Math.max(kpi.slot - 1, 0), 3); // alinha ao KPI correto (1..4)
-    if (String(sc.formatMode[idx].value.value) === "manual") {
-        return ValueFormatter.format({
-            value: kpi.value,
-            displayUnits: String(sc.displayUnits[idx].value.value) as DisplayUnits,
-            decimalPlaces: sc.decimals[idx].value,
-            locale: DEFAULT_LOCALE,
-        });
-    }
-    // Auto: respeita o format string da propria medida (%, moeda, etc.).
-    if (kpi.format) {
-        return valueFormatter.format(kpi.value, kpi.format, false, DEFAULT_LOCALE);
-    }
-    // Sem format definido na medida: usa escala automatica K/M/B (evita numero cru gigante).
-    return ValueFormatter.format({ value: kpi.value, displayUnits: "auto", decimalPlaces: 1, locale: DEFAULT_LOCALE });
+    return formatValueNative(
+        kpi.value,
+        kpi.format,
+        String(sc.displayUnits[idx].value.value),
+        sc.decimalsAuto[idx].value,
+        sc.decimals[idx].value
+    );
 }
 
 export function buildSecondary(ctx: RenderContext): HTMLElement | null {
@@ -366,42 +406,43 @@ export function buildSecondary(ctx: RenderContext): HTMLElement | null {
     if (!sc.secondaryEnabled.value) return null;
     if (ctx.data.secondary.length === 0) return null;
 
-    const wrap = createHTMLElement("div", {
-        display: "flex",
-        gap: "6px",
-        flexWrap: "wrap",
-    });
+    const labelFont = readFont(sc.labelFont);
+    const valueFont = readFont(sc.valueFont);
+    const labelColor = safeColor(sc.secondaryLabelColor.value.value, DEFAULT_COLORS.secondaryLabel);
+    const valueColor = safeColor(sc.secondaryValueColor.value.value, DEFAULT_COLORS.secondaryValue);
+    const align = String(sc.labelAlignment.value.value);
+    const labelWrap = sc.labelWrap.value;
+    const valueWrap = sc.valueWrap.value;
+    const bg = applyOpacity(safeColor(sc.secondaryBgColor.value.value, DEFAULT_COLORS.secondaryBg), sc.secondaryBgTransparency.value);
+
+    const wrap = createHTMLElement("div", { display: "flex", gap: "6px", flexWrap: "wrap" });
 
     for (const kpi of ctx.data.secondary) {
+        const idx = Math.min(Math.max(kpi.slot - 1, 0), 3);
+        const labelText = ValueFormatter.sanitizeText(sc.labelText[idx].value) || ValueFormatter.sanitizeText(kpi.label);
+        const valueText = formatSecondaryValue(ctx, kpi);
+
         const chip = createHTMLElement("div", {
             display: "flex",
             flexDirection: "column",
             gap: "1px",
-            background: applyOpacity(safeColor(sc.secondaryBgColor.value.value, DEFAULT_COLORS.secondaryBg), sc.secondaryBgTransparency.value),
+            background: bg,
             borderRadius: "6px",
             padding: "4px 8px",
             minWidth: "0",
             flex: "1 1 auto",
-        });
-        const label = createHTMLElement("span", {
-            fontSize: `${sc.secondaryLabelSize.value}pt`,
-            color: safeColor(sc.secondaryLabelColor.value.value, DEFAULT_COLORS.secondaryLabel),
-            fontFamily: ctx.settings.title.font.fontFamily.value,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-        });
-        label.textContent = ValueFormatter.sanitizeText(kpi.label);
-        const value = createHTMLElement("span", {
-            fontSize: `${sc.secondaryValueSize.value}pt`,
-            color: safeColor(sc.secondaryValueColor.value.value, DEFAULT_COLORS.secondaryValue),
-            fontWeight: sc.secondaryValueBold.value ? "bold" : "normal",
-            fontFamily: ctx.settings.title.font.fontFamily.value,
-            whiteSpace: "nowrap",
-        });
-        value.textContent = formatSecondaryValue(ctx, kpi);
-        chip.appendChild(label);
-        chip.appendChild(value);
+        }, { role: "group", "aria-label": `${labelText}: ${valueText}` });
+
+        const labelEl = createHTMLElement("span");
+        labelEl.textContent = labelText;
+        applyTextStyle(labelEl, labelFont, labelColor, align, labelWrap);
+
+        const valueEl = createHTMLElement("span");
+        valueEl.textContent = valueText;
+        applyTextStyle(valueEl, valueFont, valueColor, align, valueWrap);
+
+        chip.appendChild(labelEl);
+        chip.appendChild(valueEl);
         wrap.appendChild(chip);
     }
 

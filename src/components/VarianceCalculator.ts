@@ -28,8 +28,23 @@ export class VarianceCalculator {
         }
 
         const absolute = current - comparison;
-        const percentage = comparison !== 0 ? (absolute / Math.abs(comparison)) * 100 : null;
-        const absPct = percentage !== null ? Math.abs(percentage) : 0;
+
+        // comparison = 0: nao ha percentual definido, mas a variacao NAO e neutra
+        // (ex.: 50 vs 0 e um aumento). Direcao vem do sinal do absoluto.
+        if (comparison === 0) {
+            const direction: VarianceResult["direction"] =
+                absolute > 0 ? "positive" : absolute < 0 ? "negative" : "neutral";
+            const isGood =
+                direction === "neutral"
+                    ? true
+                    : positiveIsGood
+                    ? direction === "positive"
+                    : direction === "negative";
+            return { absolute, percentage: null, direction, isGood };
+        }
+
+        const percentage = (absolute / Math.abs(comparison)) * 100;
+        const absPct = Math.abs(percentage);
 
         let direction: VarianceResult["direction"];
         if (absPct <= neutralThreshold) {

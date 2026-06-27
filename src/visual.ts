@@ -44,13 +44,15 @@ export class Visual implements IVisual {
         this.licenseGuard = new LicenseGuard(this.host);
         this.events = this.host.eventService;
 
-        // Acessibilidade obrigatoria para certificacao
-        this.root.setAttribute("role", "img");
+        // Acessibilidade: grupo com rotulo descritivo; pecas internas tem roles/aria proprios.
+        this.root.setAttribute("role", "group");
         this.root.setAttribute("aria-label", "KPI Spark Card");
     }
 
     public update(options: VisualUpdateOptions): void {
         this.events.renderingStarted(options);
+        // Atualiza o status de licenca (no-op em DEV; consulta a Licensing API quando ativo).
+        void this.licenseGuard.refreshLicense();
         try {
             const dataView = options?.dataViews?.[0];
             if (!dataView) {
@@ -130,12 +132,12 @@ export class Visual implements IVisual {
         sp.showEndDot.visible = type !== "bar";              // ponto final nao se aplica a barra
         sp.endDotRadius.visible = sp.showEndDot.value && type !== "bar";
 
-        // Secundarios: unidades/decimais manuais so aparecem quando o KPI esta em Manual.
+        // Casas decimais manuais so aparecem quando "automaticas" esta desligado.
+        this.settings.mainValue.decimalPlaces.visible = !this.settings.mainValue.decimalsAuto.value;
+
         const sc = this.settings.secondary;
         for (let i = 0; i < 4; i++) {
-            const manual = String(sc.formatMode[i].value.value) === "manual";
-            sc.displayUnits[i].visible = manual;
-            sc.decimals[i].visible = manual;
+            sc.decimals[i].visible = !sc.decimalsAuto[i].value;
         }
     }
 

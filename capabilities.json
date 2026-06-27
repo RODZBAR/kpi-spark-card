@@ -144,6 +144,7 @@
         },
         "category": {
             "properties": {
+                "text": { "type": { "text": true } },
                 "fontFamily": { "type": { "formatting": { "fontFamily": true } } },
                 "fontSize": { "type": { "formatting": { "fontSize": true } } },
                 "bold": { "type": { "bool": true } },
@@ -157,11 +158,13 @@
                         { "value": "right", "displayName": "Direita" }
                     ] }
                 },
-                "uppercase": { "type": { "bool": true } }
+                "uppercase": { "type": { "bool": true } },
+                "wrap": { "type": { "bool": true } }
             }
         },
         "title": {
             "properties": {
+                "text": { "type": { "text": true } },
                 "fontFamily": { "type": { "formatting": { "fontFamily": true } } },
                 "fontSize": { "type": { "formatting": { "fontSize": true } } },
                 "bold": { "type": { "bool": true } },
@@ -174,7 +177,8 @@
                         { "value": "center", "displayName": "Centro" },
                         { "value": "right", "displayName": "Direita" }
                     ] }
-                }
+                },
+                "wrap": { "type": { "bool": true } }
             }
         },
         "mainValue": {
@@ -198,10 +202,13 @@
                         { "value": "none", "displayName": "Nenhum" },
                         { "value": "thousands", "displayName": "Mil" },
                         { "value": "millions", "displayName": "Milhao" },
-                        { "value": "billions", "displayName": "Bilhao" }
+                        { "value": "billions", "displayName": "Bilhao" },
+                        { "value": "trillions", "displayName": "Trilhao" }
                     ] }
                 },
+                "decimalsAuto": { "type": { "bool": true } },
                 "decimalPlaces": { "type": { "numeric": true } },
+                "wrap": { "type": { "bool": true } },
                 "prefix": { "type": { "text": true } },
                 "suffix": { "type": { "text": true } }
             }
@@ -293,25 +300,39 @@
         "secondary": {
             "properties": {
                 "secondaryEnabled": { "type": { "bool": true } },
-                "formatMode1": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto (formato da medida)" }, { "value": "manual", "displayName": "Manual" } ] } },
-                "displayUnits1": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto" }, { "value": "none", "displayName": "Nenhum" }, { "value": "thousands", "displayName": "Mil" }, { "value": "millions", "displayName": "Milhao" }, { "value": "billions", "displayName": "Bilhao" } ] } },
+                "labelText1": { "type": { "text": true } },
+                "displayUnits1": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto" }, { "value": "none", "displayName": "Nenhum" }, { "value": "thousands", "displayName": "Mil" }, { "value": "millions", "displayName": "Milhao" }, { "value": "billions", "displayName": "Bilhao" }, { "value": "trillions", "displayName": "Trilhao" } ] } },
+                "decimalsAuto1": { "type": { "bool": true } },
                 "decimals1": { "type": { "numeric": true } },
-                "formatMode2": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto (formato da medida)" }, { "value": "manual", "displayName": "Manual" } ] } },
-                "displayUnits2": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto" }, { "value": "none", "displayName": "Nenhum" }, { "value": "thousands", "displayName": "Mil" }, { "value": "millions", "displayName": "Milhao" }, { "value": "billions", "displayName": "Bilhao" } ] } },
+                "labelText2": { "type": { "text": true } },
+                "displayUnits2": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto" }, { "value": "none", "displayName": "Nenhum" }, { "value": "thousands", "displayName": "Mil" }, { "value": "millions", "displayName": "Milhao" }, { "value": "billions", "displayName": "Bilhao" }, { "value": "trillions", "displayName": "Trilhao" } ] } },
+                "decimalsAuto2": { "type": { "bool": true } },
                 "decimals2": { "type": { "numeric": true } },
-                "formatMode3": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto (formato da medida)" }, { "value": "manual", "displayName": "Manual" } ] } },
-                "displayUnits3": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto" }, { "value": "none", "displayName": "Nenhum" }, { "value": "thousands", "displayName": "Mil" }, { "value": "millions", "displayName": "Milhao" }, { "value": "billions", "displayName": "Bilhao" } ] } },
+                "labelText3": { "type": { "text": true } },
+                "displayUnits3": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto" }, { "value": "none", "displayName": "Nenhum" }, { "value": "thousands", "displayName": "Mil" }, { "value": "millions", "displayName": "Milhao" }, { "value": "billions", "displayName": "Bilhao" }, { "value": "trillions", "displayName": "Trilhao" } ] } },
+                "decimalsAuto3": { "type": { "bool": true } },
                 "decimals3": { "type": { "numeric": true } },
-                "formatMode4": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto (formato da medida)" }, { "value": "manual", "displayName": "Manual" } ] } },
-                "displayUnits4": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto" }, { "value": "none", "displayName": "Nenhum" }, { "value": "thousands", "displayName": "Mil" }, { "value": "millions", "displayName": "Milhao" }, { "value": "billions", "displayName": "Bilhao" } ] } },
+                "labelText4": { "type": { "text": true } },
+                "displayUnits4": { "type": { "enumeration": [ { "value": "auto", "displayName": "Auto" }, { "value": "none", "displayName": "Nenhum" }, { "value": "thousands", "displayName": "Mil" }, { "value": "millions", "displayName": "Milhao" }, { "value": "billions", "displayName": "Bilhao" }, { "value": "trillions", "displayName": "Trilhao" } ] } },
+                "decimalsAuto4": { "type": { "bool": true } },
                 "decimals4": { "type": { "numeric": true } },
-                "secondaryBgColor": { "type": { "fill": { "solid": { "color": true } } } },
-                "secondaryBgTransparency": { "type": { "numeric": true } },
-                "secondaryLabelSize": { "type": { "formatting": { "fontSize": true } } },
+                "secLabelFontFamily": { "type": { "formatting": { "fontFamily": true } } },
+                "secLabelFontSize": { "type": { "formatting": { "fontSize": true } } },
+                "secLabelBold": { "type": { "bool": true } },
+                "secLabelItalic": { "type": { "bool": true } },
+                "secLabelUnderline": { "type": { "bool": true } },
                 "secondaryLabelColor": { "type": { "fill": { "solid": { "color": true } } } },
-                "secondaryValueSize": { "type": { "formatting": { "fontSize": true } } },
+                "labelAlignment": { "type": { "enumeration": [ { "value": "left", "displayName": "Esquerda" }, { "value": "center", "displayName": "Centro" }, { "value": "right", "displayName": "Direita" } ] } },
+                "labelWrap": { "type": { "bool": true } },
+                "secValueFontFamily": { "type": { "formatting": { "fontFamily": true } } },
+                "secValueFontSize": { "type": { "formatting": { "fontSize": true } } },
+                "secValueBold": { "type": { "bool": true } },
+                "secValueItalic": { "type": { "bool": true } },
+                "secValueUnderline": { "type": { "bool": true } },
                 "secondaryValueColor": { "type": { "fill": { "solid": { "color": true } } } },
-                "secondaryValueBold": { "type": { "bool": true } }
+                "valueWrap": { "type": { "bool": true } },
+                "secondaryBgColor": { "type": { "fill": { "solid": { "color": true } } } },
+                "secondaryBgTransparency": { "type": { "numeric": true } }
             }
         },
         "footer": {
